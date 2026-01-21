@@ -20,16 +20,20 @@ TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
 
 # ------------------ CONFIG ------------------
 
-UPLOAD_FOLDER = "uploads"
-MODEL_PATH = "models/best.pt"
+UPLOAD_FOLDER = "/tmp/uploads"
+# Use YOLOv8 Nano for minimal memory footprint (will auto-download if not present)
+MODEL_PATH = "yolov8n.pt"  # Smallest YOLO model (~6MB vs your custom model)
 CLUSTER_RADIUS_METERS = 100
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ------------------ MODEL ------------------
 
-# Load YOLO model once
+# Load YOLO model once with explicit memory optimization
+import torch
+torch.set_num_threads(1)  # Limit CPU threads to reduce memory
 model = YOLO(MODEL_PATH)
+model.overrides['verbose'] = False  # Reduce logging overhead
 
 # ------------------ FIREBASE ------------------
 
