@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Admin Dashboard – Pothole Detection</title>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+</head>
+
+<body>
+
+  <header class="admin-header">
+    <div class="header-content">
+      <h1>📊 Pothole Reports</h1>
+      <div class="header-actions">
+        <button onclick="openAddPotholeModal()" class="btn-primary">
+          + Add Pothole
+        </button>
+        <a href="/" class="btn-secondary">Go Home</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- ================= SUMMARY ================= -->
+
+    <div class="summary-cards">
+      <div class="card total">
+        <h3>Total Reports</h3>
+        <p>{{ summary.total }}</p>
+      </div>
+
+      <div class="card high">
+        <h3>High Severity</h3>
+        <p>{{ summary.high }}</p>
+      </div>
+
+      <div class="card medium">
+        <h3>Medium Severity</h3>
+        <p>{{ summary.medium }}</p>
+      </div>
+
+      <div class="card low">
+        <h3>Low Severity</h3>
+        <p>{{ summary.low }}</p>
+      </div>
+
+      <div class="card none">
+        <h3>No Pothole</h3>
+        <p>{{ summary.none }}</p>
+      </div>
+    </div>
+
+    <!-- ================= DASHBOARD MAP ================= -->
+    <div id="dashboard-map"
+      style="height: 400px; width: 100%; border-radius: 12px; margin-bottom: 30px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+    </div>
+
+    <!-- ================= CLUSTERS ================= -->
+
+    <h2>📍 Detected Pothole Clusters</h2>
+
+    {% if clusters|length == 0 %}
+    <p class="empty-state">No clusters detected yet.</p>
+    {% else %}
+    <div class="cluster-list">
+      {% for c in clusters %}
+      <div class="cluster-card severity-{{ c.max_severity | lower }}" data-bounds='{{ c.bounds | tojson | safe }}'
+        onclick="focusCluster(JSON.parse(this.dataset.bounds))" title="Click to view on map"
+        style="cursor: pointer; transition: transform 0.2s;">
+
+        <!-- Show Friendly Name -->
+        <h3>{{ c.friendly_name }}</h3>
+
+        <p><strong>Reports:</strong> {{ c.reports | length }}</p>
+        <p><strong>Max Severity:</strong> {{ c.max_severity }}</p>
+
+        <!-- Status -->
+        <p>
+          <strong>Status:</strong>
+          <span class="status {{ c.status | lower | replace(' ', '-') }}">
+            {{ c.status }}
+          </span>
+        </p>
+
+        <!-- Update status -->
+        <form method="post" action="/admin/cluster/update" onclick="event.stopPropagation()">
+          <input type="hidden" name="cluster_id" value="{{ c.id }}">
+
+          <select name="status">
+            <option value="Open" {% if c.status=='Open' %}selected{% endif %}>Open</option>
+            <option value="In Progress" {% if c.status=='In Progress' %}selected{% endif %}>In Progress</option>
+            <option value="Fixed" {% if c.status=='Fixed' %}selected{% endif %}>Fixed</option>
+          </select>
+
+          <button type="submit" class="btn-small">Update</button>
+        </form>
+
+        <button onclick="event.stopPropagation(); toggleCluster('{{ loop.index }}')" class="btn-outline">
+          View reports
+        </button>
+
+        <!-- Drill-down -->
+        <div id="cluster-{{ loop.index }}" class="cluster-details hidden" onclick="event.stopPropagation()">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Severity</th>
+                <th>Detections</th>
+                <th>Road</th>
+                <th>Area</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in c.reports %}
+              <tr>
+                <td>{{ r.timestamp | truncate(16, True, '') }}</td>
+                <td>{{ r.severity }}</td>
+                <td>{{ r.detections }}</td>
+                <td>{{ r.road or "—" }}</td>
+                <td>{{ r.area or "—" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ================= FILTERS ================= -->
+
+    <div class="filters">
+      <label>
+        Severity:
+        <select id="severityFilter" onchange="filterTable()">
+          <option value="all">All</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+          <option value="None">None</option>
+        </select>
+      </label>
+
+      <label>
+        Status:
+        <select id="statusFilter" onchange="filterTable()">
+          <option value="all">All</option>
+          <option value="Pothole Detected">Pothole Detected</option>
+          <option value="No Pothole Detected">No Pothole Detected</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- ================= MAIN REPORTS TABLE ================= -->
+
+    <div class="table-container">
+      <table id="reports-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Severity</th>
+            <th>Detections</th>
+            <th>Status</th>
+            <th>Road</th>
+            <th>Area</th>
+            <th>Location</th>
+            <th>Image</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for r in reports %}
+          <tr>
+            <td>{{ r.timestamp.split('T')[0] }}</td>
+            <td>
+              {% if r.source == 'admin_manual' %}
+              <span class="badge manual">Manual</span>
+              {% elif r.source == 'whatsapp' %}
+              <span class="badge whatsapp"
+                style="background: #dcfce7; color: #166534; border: 1px solid #86efac;">WhatsApp</span>
+              {% else %}
+              <span class="badge auto">Auto</span>
+              {% endif %}
+            </td>
+            <td class="severity {{ r.severity | lower }}">{{ r.severity }}</td>
+            <td>{{ r.detections }}</td>
+            <td>{{ r.status }}</td>
+            <td>{{ r.road or "—" }}</td>
+            <td>{{ r.area or "—" }}</td>
+            <td>
+              {% if r.latitude and r.longitude %}
+              <a href="https://www.google.com/maps?q={{r.latitude}},{{r.longitude}}" target="_blank">
+                View
+              </a>
+              {% else %}
+              —
+              {% endif %}
+            </td>
+            <td>{{ r.filename }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div> <!-- End Container -->
+
+  <!-- ================= ADD POTHOLE MODAL ================= -->
+  <div id="addPotholeModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📍 Add Pothole Manually</h2>
+        <span class="close-modal" onclick="closeAddPotholeModal()">&times;</span>
+      </div>
+
+      <div class="modal-body">
+        <div id="admin-map"></div>
+        <p class="map-hint">Click on the map to pin the location</p>
+
+        <form id="addPotholeForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="manual_lat">Latitude</label>
+              <input type="text" id="manual_lat" readonly required>
+            </div>
+            <div class="form-group">
+              <label for="manual_lon">Longitude</label>
+              <input type="text" id="manual_lon" readonly required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="manual_severity">Severity</label>
+            <select id="manual_severity" required>
+              <option value="High">High (Major hazard)</option>
+              <option value="Medium">Medium (Noticeable)</option>
+              <option value="Low">Low (Surface crack)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="manual_road">Road Name (Optional)</label>
+            <input type="text" id="manual_road" placeholder="e.g. Main Street">
+          </div>
+
+          <div class="form-group">
+            <label for="manual_notes">Notes</label>
+            <textarea id="manual_notes" rows="2" placeholder="Description..."></textarea>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" onclick="closeAddPotholeModal()">Cancel</button>
+            <button type="submit" class="btn-primary">Save Pothole</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCRIPTS ================= -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script id="clusters-data" type="application/json">
+    {{ clusters | tojson | safe }}
+  </script>
+
+  <script>
+    // Pass clusters data to JS
+    const clustersDataElement = document.getElementById('clusters-data');
+    const clustersData = clustersDataElement ? JSON.parse(clustersDataElement.textContent) : [];
+
+    // --- Main Dashboard Map ---
+    let dashboardMap;
+
+    function initDashboardMap() {
+      // Default center (Bangalore)
+      const mapElement = document.getElementById('dashboard-map');
+      if (!mapElement) return;
+
+      dashboardMap = L.map('dashboard-map').setView([12.9716, 77.5946], 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(dashboardMap);
+
+      if (clustersData && clustersData.length > 0) {
+        const bounds = L.latLngBounds();
+
+        clustersData.forEach(cluster => {
+          const color = cluster.max_severity === 'High' ? '#ef4444' :
+            cluster.max_severity === 'Medium' ? '#f59e0b' : '#10b981';
+
+          // Draw Polygon or Circle representing the cluster
+          if (cluster.bounds && cluster.bounds[0][0] !== cluster.bounds[1][0]) {
+            // Box
+            const rect = L.rectangle(cluster.bounds, {
+              color: color,
+              weight: 2,
+              fillOpacity: 0.2
+            }).addTo(dashboardMap);
+            rect.bindPopup(`<b>${cluster.friendly_name}</b><br>Reports: ${cluster.reports.length}`);
+            bounds.extend(cluster.bounds[0]);
+            bounds.extend(cluster.bounds[1]);
+          } else if (cluster.center_lat && cluster.center_lon) {
+            // Point
+            const circle = L.circle([cluster.center_lat, cluster.center_lon], {
+              color: color,
+              fillColor: color,
+              fillOpacity: 0.5,
+              radius: 200
+            }).addTo(dashboardMap);
+            circle.bindPopup(`<b>${cluster.friendly_name}</b><br>Reports: ${cluster.reports.length}`);
+            bounds.extend([cluster.center_lat, cluster.center_lon]);
+          }
+        });
+
+        dashboardMap.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }
+
+    function focusCluster(bounds) {
+      if (dashboardMap && bounds) {
+        dashboardMap.flyToBounds(bounds, { padding: [50, 50], duration: 1.5 });
+        document.getElementById('dashboard-map').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // Initialize map on load
+    document.addEventListener('DOMContentLoaded', initDashboardMap);
+
+    // Filter Logic
+    function filterTable() {
+      const severity = document.getElementById("severityFilter").value;
+      const status = document.getElementById("statusFilter").value;
+      const rows = document.querySelectorAll("#reports-table tbody tr");
+
+      rows.forEach(row => {
+        const rowSeverity = row.children[2].innerText.trim();
+        const rowStatus = row.children[4].innerText.trim();
+        let show = true;
+        if (severity !== "all" && rowSeverity !== severity) show = false;
+        if (status !== "all" && rowStatus !== status) show = false;
+        row.style.display = show ? "" : "none";
+      });
+    }
+
+    function toggleCluster(id) {
+      document.getElementById("cluster-" + id).classList.toggle("hidden");
+    }
+
+    // Map & Modal Logic
+    let map, marker;
+    const modal = document.getElementById('addPotholeModal');
+
+    function openAddPotholeModal() {
+      modal.classList.remove('hidden');
+
+      // Initialize map if not already done
+      if (!map) {
+        // Default to a central location (e.g., city center or user's last known)
+        // Here defaulting to a generic location, but try to get browser location
+        map = L.map('admin-map').setView([12.9716, 77.5946], 13); // Default: Bangalore (Example)
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Map Click Handler
+        map.on('click', function (e) {
+          const lat = e.latlng.lat.toFixed(6);
+          const lng = e.latlng.lng.toFixed(6);
+
+          document.getElementById('manual_lat').value = lat;
+          document.getElementById('manual_lon').value = lng;
+
+          if (marker) {
+            marker.setLatLng(e.latlng);
+          } else {
+            marker = L.marker(e.latlng).addTo(map);
+          }
+        });
+
+        // Try to get user location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(position => {
+            map.setView([position.coords.latitude, position.coords.longitude], 15);
+          });
+        }
+      }
+
+      // Fix map sizing issue when modal opens
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+    }
+
+    function closeAddPotholeModal() {
+      modal.classList.add('hidden');
+      document.getElementById('addPotholeForm').reset();
+      if (marker) map.removeLayer(marker);
+      marker = null;
+    }
+
+    // Close on outside click
+    window.onclick = function (event) {
+      if (event.target == modal) {
+        closeAddPotholeModal();
+      }
+    }
+
+    // Handle Form Submit
+    document.getElementById('addPotholeForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const lat = document.getElementById('manual_lat').value;
+      const lon = document.getElementById('manual_lon').value;
+      const severity = document.getElementById('manual_severity').value;
+      const road = document.getElementById('manual_road').value;
+      const notes = document.getElementById('manual_notes').value;
+
+      if (!lat || !lon) {
+        alert("Please click on the map to pin a location.");
+        return;
+      }
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.textContent = "Saving...";
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch('/api/admin/add-pothole', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            latitude: lat,
+            longitude: lon,
+            severity: severity,
+            road: road,
+            notes: notes
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert("Pothole added successfully!");
+          location.reload(); // Reload to show new entry
+        } else {
+          alert("Error: " + result.error);
+        }
+      } catch (err) {
+        alert("Failed to connect to server.");
+        console.error(err);
+      } finally {
+        submitBtn.textContent = "Save Pothole";
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+
+</body>
+
+</html>

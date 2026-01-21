@@ -1,0 +1,11 @@
+venv/
+venv_fix/
+__pycache__/
+*.pyc
+.env
+firebase_key.json
+uploads/
+.DS_Store
+export/
+test_output.txt
+test_output_2.txt

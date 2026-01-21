@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detection Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <h2>✅ Analysis Complete</h2>
+
+    <div class="result-box">
+        <p><strong>File:</strong> {{ filename }}</p>
+        <p><strong>Status:</strong> {{ status }}</p>
+        <p><strong>Potholes Detected:</strong> {{ detections }}</p>
+        <p>
+            <strong>Severity:</strong>
+            <span class="{{ severity_class }}">{{ severity }}</span>
+        </p>
+    </div>
+
+    <div class="thank-you">
+        🙏 Thank you for contributing to pothole recognition and helping enhance
+        road safety for everyone.
+    </div>
+
+    <a href="/">Upload another image</a>
+</div>
+
+</body>
+</html>
+       restult

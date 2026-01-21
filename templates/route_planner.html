@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Route Planner - Pothole Avoidance</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='route_planner.css') }}">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path
+                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <h1>Smart Route Planner</h1>
+                </div>
+                <p class="subtitle">Navigate smarter, avoid potholes, ride smoother</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Side Panel -->
+            <div class="side-panel">
+                <!-- Input Card -->
+                <div class="glass-card input-card">
+                    <div class="card-header">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                        <h2>Enter Locations</h2>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="start-input">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <circle cx="12" cy="12" r="10" stroke-width="2" />
+                                <circle cx="12" cy="12" r="3" fill="currentColor" />
+                            </svg>
+                            Start Location
+                        </label>
+                        <input type="text" id="start-input" placeholder="Enter address or click on map"
+                            class="modern-input">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="end-input">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            End Location
+                        </label>
+                        <input type="text" id="end-input" placeholder="Enter address or click on map"
+                            class="modern-input">
+                    </div>
+
+                    <button id="plan-route-btn" class="gradient-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Plan Route
+                    </button>
+
+                    <button id="clear-btn" class="outline-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Clear All
+                    </button>
+                </div>
+
+                <!-- Results Card -->
+                <div id="results-section" class="glass-card results-card hidden">
+                    <div class="card-header">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <h2>Route Comparison</h2>
+                    </div>
+
+                    <!-- Road Health Score -->
+                    <div id="health-score-container" class="health-score-section hidden">
+                        <div class="health-score-wrapper">
+                            <div class="score-ring-container">
+                                <svg class="score-ring" viewBox="0 0 120 120">
+                                    <circle class="score-ring-bg" cx="60" cy="60" r="50" />
+                                    <circle id="score-ring-progress" class="score-ring-progress" cx="60" cy="60"
+                                        r="50" />
+                                </svg>
+                                <div class="score-value">
+                                    <span id="health-score">0</span>
+                                    <span class="score-label">Health</span>
+                                </div>
+                            </div>
+                            <div class="score-info">
+                                <h3>Road Health Score</h3>
+                                <p id="health-description">Calculating...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Potholes Avoided Counter -->
+                    <div id="potholes-avoided" class="potholes-counter hidden">
+                        <div class="counter-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="counter-content">
+                            <div class="counter-value" id="avoided-count">0</div>
+                            <div class="counter-label">Potholes Avoided</div>
+                        </div>
+                    </div>
+
+                    <!-- Badge Achievement -->
+                    <div id="badge-achievement" class="badge-card hidden">
+                        <div class="badge-icon">🏆</div>
+                        <div class="badge-content">
+                            <h3>Smooth Rider Badge!</h3>
+                            <p>You chose the safer route</p>
+                        </div>
+                    </div>
+
+                    <div id="route-info" class="route-cards">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+
+                    <div id="recommendation" class="recommendation-section">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Legend Card -->
+                <div class="glass-card legend-card">
+                    <div class="card-header">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <h2>Map Legend</h2>
+                    </div>
+                    <div class="legend-items">
+                        <div class="legend-item">
+                            <span class="legend-marker pothole-high"></span>
+                            <span>High Severity Pothole</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-marker pothole-medium"></span>
+                            <span>Medium Severity</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-marker pothole-low"></span>
+                            <span>Low Severity</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-line original-route"></span>
+                            <span>Original Route</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-line safe-route"></span>
+                            <span>Safe Alternative</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-marker series-marker"></span>
+                            <span>Pothole Series Zone</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <a href="/" class="action-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Home
+                    </a>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="map" class="map-element"></div>
+                <div id="loading" class="loading-overlay hidden">
+                    <div class="loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <p class="loading-text">Planning your optimal route...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='route_planner.js') }}"></script>
+</body>
+
+</html>

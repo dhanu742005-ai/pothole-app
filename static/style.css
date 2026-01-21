@@ -1,0 +1,155 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(120deg, #f0f4f8, #d9e4f5);
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 500px;
+    margin: 80px auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+h1, h2 {
+    color: #2c3e50;
+}
+
+p {
+    color: #555;
+}
+
+input[type="file"] {
+    margin-top: 15px;
+}
+
+button {
+    margin-top: 20px;
+    padding: 12px 25px;
+    background-color: #2e86de;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #1e6bb8;
+}
+
+.result-box {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 6px;
+    background-color: #f7f9fc;
+}
+
+.severity-low {
+    color: green;
+    font-weight: bold;
+}
+
+.severity-medium {
+    color: orange;
+    font-weight: bold;
+}
+
+.severity-high {
+    color: red;
+    font-weight: bold;
+}
+
+a {
+    display: inline-block;
+    margin-top: 25px;
+    text-decoration: none;
+    color: #2e86de;
+    font-weight: bold;
+}
+
+.thank-you {
+    margin-top: 25px;
+    font-size: 14px;
+    color: #444;
+}
+
+.summary-cards {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 25px;
+    gap: 15px;
+}
+
+.card {
+    flex: 1;
+    padding: 15px;
+    border-radius: 8px;
+    color: white;
+    text-align: center;
+}
+
+.card h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.card p {
+    font-size: 28px;
+    margin: 5px 0 0;
+    font-weight: bold;
+}
+
+.card.total {
+    background-color: #34495e;
+}
+
+.card.high {
+    background-color: #e74c3c;
+}
+
+.card.medium {
+    background-color: #f39c12;
+}
+
+.card.low {
+    background-color: #27ae60;
+}
+
+.card.none {
+    background-color: #7f8c8d;
+}
+
+.cluster-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.cluster-card {
+    padding: 15px;
+    border-radius: 8px;
+    background: #f9f9f9;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.cluster-card h3 {
+    margin-top: 0;
+}
+
+.cluster-card.severity-high {
+    border-left: 6px solid #e74c3c;
+}
+
+.cluster-card.severity-medium {
+    border-left: 6px solid #f39c12;
+}
+
+.cluster-card.severity-low {
+    border-left: 6px solid #2ecc71;
+}

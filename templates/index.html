@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Pothole Detection</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" class="logo-icon">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>RoadGuard AI</span>
+            </div>
+            <div class="nav-links">
+                <a href="/route-planner" class="nav-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path
+                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Route Planner
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="hero-section">
+                <h1>Detect Potholes Instantly</h1>
+                <p>Upload a road image to analyze severity and improve road safety with AI-powered detection.</p>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="glass-card upload-card">
+                <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+                    <div class="upload-zone" id="dropZone">
+                        <input type="file" name="image" id="fileInput" accept="image/*" hidden>
+                        <input type="hidden" name="latitude" id="latitude">
+                        <input type="hidden" name="longitude" id="longitude">
+
+                        <div class="upload-content" id="uploadContent">
+                            <div class="icon-circle">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </div>
+                            <h3>Drag & Drop or Click to Upload</h3>
+                            <p class="file-hint">Supports JPG, PNG, JPEG</p>
+                        </div>
+
+                        <!-- Preview Section -->
+                        <div class="preview-content hidden" id="previewContent">
+                            <img id="imagePreview" alt="Preview">
+                            <div class="file-info">
+                                <span id="fileName">image.jpg</span>
+                                <button type="button" class="remove-btn" id="removeBtn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div class="loading-state hidden" id="loadingState">
+                            <div class="scanner"></div>
+                            <p>AI analyzing road surface...</p>
+                        </div>
+                    </div>
+
+                    <div class="action-area">
+                        <div id="locationStatus" class="location-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M12 2a8 8 0 018 8c0 5.25-8 12-8 12S4 15.25 4 10a8 8 0 018-8z"
+                                    stroke-width="2" />
+                                <circle cx="12" cy="10" r="3" stroke-width="2" />
+                            </svg>
+                            <span>Waiting for location...</span>
+                        </div>
+                        <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                            <span>Analyze Image</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M5 12h14M12 5l7 7-7 7" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="features-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">🔍</span>
+                    <span>AI Precision</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span>Instant Results</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📍</span>
+                    <span>Geo-Tagging</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='home.js') }}"></script>
+</body>
+
+</html>
